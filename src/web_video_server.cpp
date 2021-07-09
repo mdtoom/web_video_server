@@ -128,6 +128,8 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         __default_stream_type = "mjpeg";
     }
 
+    nh->declare_parameter("min_interval_between_frames", 0); // [ms]
+
     stream_types_["mjpeg"]          = boost::shared_ptr<ImageStreamerType>(new MjpegStreamerType());
     stream_types_["png"]            = boost::shared_ptr<ImageStreamerType>(new PngStreamerType());
     stream_types_["ros_compressed"] = boost::shared_ptr<ImageStreamerType>(new RosCompressedStreamerType());

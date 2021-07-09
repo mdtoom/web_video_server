@@ -62,9 +62,10 @@ protected:
     bool                                                     invert_;
     std::string                                              default_transport_;
 
-    rclcpp::Time last_frame;
-    cv::Mat      output_size_image;
-    boost::mutex send_mutex_;
+    rclcpp::Time     last_frame;
+    rclcpp::Duration min_interval_between_frames_;
+    cv::Mat          output_size_image;
+    boost::mutex     send_mutex_;
 
 private:
     bool initialized_;

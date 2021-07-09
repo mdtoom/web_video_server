@@ -26,8 +26,11 @@ ImageTransportImageStreamer::ImageTransportImageStreamer(const async_web_server_
                                                          async_web_server_cpp::HttpConnectionPtr  connection,
                                                          rclcpp::Node::SharedPtr                  nh)
     : ImageStreamer(request, connection, nh)
+    , min_interval_between_frames_(std::chrono::milliseconds(nh->get_parameter("min_interval_between_frames").as_int()))
+    , last_frame(nh->now() - min_interval_between_frames_ * 2)
     , initialized_(false)
 {
+    RCLCPP_INFO(nh->get_logger(), "min interval between frames: %f", min_interval_between_frames_.seconds());
     output_width_      = request.get_query_param_value_or_default<int>("width", -1);
     output_height_     = request.get_query_param_value_or_default<int>("height", -1);
     invert_            = request.has_query_param("invert");
@@ -106,6 +109,11 @@ void ImageTransportImageStreamer::imageCallback(const sensor_msgs::msg::Image::C
 {
     if (inactive_)
         return;
+
+    if (last_frame + min_interval_between_frames_ > nh_->now())
+    {
+        return;
+    }
 
     cv::Mat img;
     try
