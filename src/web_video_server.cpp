@@ -57,7 +57,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
 {
     rclcpp::Parameter parameter;
 
-    private_nh->declare_parameter("port");
+    private_nh->declare_parameter<int>("port");
     if (private_nh->get_parameter("port", parameter))
     {
         port_ = parameter.as_int();
@@ -67,7 +67,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         port_ = 8080;
     }
 
-    private_nh->declare_parameter("verbose");
+    private_nh->declare_parameter<bool>("verbose");
     if (private_nh->get_parameter("verbose", parameter))
     {
         __verbose = parameter.as_bool();
@@ -77,7 +77,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         __verbose = true;
     }
 
-    private_nh->declare_parameter("address");
+    private_nh->declare_parameter<std::string>("address");
     if (private_nh->get_parameter("address", parameter))
     {
         address_ = parameter.as_string();
@@ -88,7 +88,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
     }
 
     int server_threads;
-    private_nh->declare_parameter("server_threads");
+    private_nh->declare_parameter<int>("server_threads");
     if (private_nh->get_parameter("server_threads", parameter))
     {
         server_threads = parameter.as_int();
@@ -98,7 +98,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         server_threads = 1;
     }
 
-    private_nh->declare_parameter("ros_threads");
+    private_nh->declare_parameter<int>("ros_threads");
     if (private_nh->get_parameter("ros_threads", parameter))
     {
         ros_threads_ = parameter.as_int();
@@ -108,7 +108,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         ros_threads_ = 2;
     }
 
-    private_nh->declare_parameter("publish_rate");
+    private_nh->declare_parameter<double>("publish_rate");
     if (private_nh->get_parameter("publish_rate", parameter))
     {
         publish_rate_ = parameter.as_double();
@@ -118,7 +118,7 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
         publish_rate_ = -1.0;
     }
 
-    private_nh->declare_parameter("default_stream_type");
+    private_nh->declare_parameter<std::string>("default_stream_type");
     if (private_nh->get_parameter("default_stream_type", parameter))
     {
         __default_stream_type = parameter.as_string();
