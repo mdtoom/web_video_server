@@ -27,10 +27,10 @@ ImageTransportImageStreamer::ImageTransportImageStreamer(const async_web_server_
                                                          rclcpp::Node::SharedPtr                  nh)
     : ImageStreamer(request, connection, nh)
     , min_interval_between_frames_(std::chrono::milliseconds(nh->get_parameter("min_interval_between_frames").as_int()))
-    , last_frame(nh->now() - min_interval_between_frames_ * 2)
     , initialized_(false)
 {
     RCLCPP_INFO(nh->get_logger(), "min interval between frames: %f", min_interval_between_frames_.seconds());
+    last_frame         = nh->now() - min_interval_between_frames_ * 2;
     output_width_      = request.get_query_param_value_or_default<int>("width", -1);
     output_height_     = request.get_query_param_value_or_default<int>("height", -1);
     invert_            = request.has_query_param("invert");
@@ -64,6 +64,7 @@ void ImageTransportImageStreamer::start()
         topic_,
         rclcpp::SensorDataQoS(),
         std::bind(&ImageTransportImageStreamer::imageCallback, this, std::placeholders::_1));
+    RCLCPP_INFO(nh_->get_logger(), "Streamer started with topic: %s", topic_.c_str());
 }
 
 void ImageTransportImageStreamer::initialize(const cv::Mat&)
