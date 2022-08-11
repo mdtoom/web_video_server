@@ -18,6 +18,10 @@
 #include <vector>
 
 using namespace std::chrono_literals;
+using boost::placeholders::_1;
+using boost::placeholders::_2;
+using boost::placeholders::_3;
+using boost::placeholders::_4;
 
 namespace web_video_server
 {
@@ -55,78 +59,21 @@ WebVideoServer::WebVideoServer(rclcpp::Node::SharedPtr& nh, rclcpp::Node::Shared
     : nh_(nh)
     , handler_group_(async_web_server_cpp::HttpReply::stock_reply(async_web_server_cpp::HttpReply::not_found))
 {
-    rclcpp::Parameter parameter;
 
-    private_nh->declare_parameter("port");
-    if (private_nh->get_parameter("port", parameter))
-    {
-        port_ = parameter.as_int();
-    }
-    else
-    {
-        port_ = 8080;
-    }
+    port_ = private_nh->declare_parameter("port", 8080);
 
-    private_nh->declare_parameter("verbose");
-    if (private_nh->get_parameter("verbose", parameter))
-    {
-        __verbose = parameter.as_bool();
-    }
-    else
-    {
-        __verbose = true;
-    }
+    __verbose = private_nh->declare_parameter("verbose", true);
 
-    private_nh->declare_parameter("address");
-    if (private_nh->get_parameter("address", parameter))
-    {
-        address_ = parameter.as_string();
-    }
-    else
-    {
-        address_ = "0.0.0.0";
-    }
+    address_ = private_nh->declare_parameter("address", "0.0.0.0");
 
     int server_threads;
-    private_nh->declare_parameter("server_threads");
-    if (private_nh->get_parameter("server_threads", parameter))
-    {
-        server_threads = parameter.as_int();
-    }
-    else
-    {
-        server_threads = 1;
-    }
+    server_threads = private_nh->declare_parameter("server_threads", 1);
 
-    private_nh->declare_parameter("ros_threads");
-    if (private_nh->get_parameter("ros_threads", parameter))
-    {
-        ros_threads_ = parameter.as_int();
-    }
-    else
-    {
-        ros_threads_ = 2;
-    }
+    ros_threads_ = private_nh->declare_parameter("ros_threads", 2);
 
-    private_nh->declare_parameter("publish_rate");
-    if (private_nh->get_parameter("publish_rate", parameter))
-    {
-        publish_rate_ = parameter.as_double();
-    }
-    else
-    {
-        publish_rate_ = -1.0;
-    }
+    publish_rate_ = private_nh->declare_parameter("publish_rate", -1.0);
 
-    private_nh->declare_parameter("default_stream_type");
-    if (private_nh->get_parameter("default_stream_type", parameter))
-    {
-        __default_stream_type = parameter.as_string();
-    }
-    else
-    {
-        __default_stream_type = "mjpeg";
-    }
+    __default_stream_type = private_nh->declare_parameter("default_stream_type", "mjpeg");
 
     nh->declare_parameter("min_interval_between_frames", 0); // [ms]
 
