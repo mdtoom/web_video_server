@@ -8,51 +8,11 @@
 namespace web_video_server
 {
 
-static int ffmpeg_boost_mutex_lock_manager(void **mutex, enum AVLockOp op)
-{
-  if (NULL == mutex)
-    return -1;
-
-  switch (op)
-  {
-    case AV_LOCK_CREATE:
-    {
-      *mutex = NULL;
-      boost::mutex *m = new boost::mutex();
-      *mutex = static_cast<void *>(m);
-      break;
-    }
-    case AV_LOCK_OBTAIN:
-    {
-      boost::mutex *m = static_cast<boost::mutex *>(*mutex);
-      m->lock();
-      break;
-    }
-    case AV_LOCK_RELEASE:
-    {
-      boost::mutex *m = static_cast<boost::mutex *>(*mutex);
-      m->unlock();
-      break;
-    }
-    case AV_LOCK_DESTROY:
-    {
-      boost::mutex *m = static_cast<boost::mutex *>(*mutex);
-      m->lock();
-      m->unlock();
-      delete m;
-      break;
-    }
-    default:
-      break;
-  }
-  return 0;
-}
-
 LibavStreamer::LibavStreamer(const async_web_server_cpp::HttpRequest &request,
                              async_web_server_cpp::HttpConnectionPtr connection, rclcpp::Node::SharedPtr nh,
                              const std::string &format_name, const std::string &codec_name,
                              const std::string &content_type) :
-    ImageTransportImageStreamer(request, connection, nh), output_format_(0), format_context_(0), codec_(0), codec_context_(0), video_stream_(
+    ImageTransportImageStreamer(request, connection, nh), format_context_(0), codec_(0), codec_context_(0), video_stream_(
         0), frame_(0), sws_context_(0), first_image_timestamp_(0), format_name_(
         format_name), codec_name_(codec_name), content_type_(content_type), opt_(0), io_buffer_(0)
 {
@@ -61,9 +21,6 @@ LibavStreamer::LibavStreamer(const async_web_server_cpp::HttpRequest &request,
   qmin_ = request.get_query_param_value_or_default<int>("qmin", 10);
   qmax_ = request.get_query_param_value_or_default<int>("qmax", 42);
   gop_ = request.get_query_param_value_or_default<int>("gop", 250);
-
-  av_lockmgr_register(&ffmpeg_boost_mutex_lock_manager);
-  av_register_all();
 }
 
 LibavStreamer::~LibavStreamer()
@@ -111,15 +68,15 @@ void LibavStreamer::initialize(const cv::Mat &img)
                                                                                                          NULL, NULL);
     throw std::runtime_error("Error allocating ffmpeg format context");
   }
-  output_format_ = av_guess_format(format_name_.c_str(), NULL, NULL);
-  if (!output_format_)
+  auto output_format = av_guess_format(format_name_.c_str(), NULL, NULL);
+  if (!output_format)
   {
     async_web_server_cpp::HttpReply::stock_reply(async_web_server_cpp::HttpReply::internal_server_error)(request_,
                                                                                                          connection_,
                                                                                                          NULL, NULL);
     throw std::runtime_error("Error looking up output format");
   }
-  format_context_->oformat = output_format_;
+  format_context_->oformat = output_format;
 
   // Set up custom IO callback.
   size_t io_buffer_size = 3 * 1024;    // 3M seen elsewhere and adjudged good
@@ -134,12 +91,12 @@ void LibavStreamer::initialize(const cv::Mat &img)
   }
   io_ctx->seekable = 0;                       // no seeking, it's a stream
   format_context_->pb = io_ctx;
-  output_format_->flags |= AVFMT_FLAG_CUSTOM_IO;
-  output_format_->flags |= AVFMT_NOFILE;
+  // output_format->flags |= AVFMT_FLAG_CUSTOM_IO;
+  // output_format->flags |= AVFMT_NOFILE;
 
   // Load codec
   if (codec_name_.empty()) // use default codec if none specified
-    codec_ = avcodec_find_encoder(output_format_->video_codec);
+    codec_ = avcodec_find_encoder(output_format->video_codec);
   else
     codec_ = avcodec_find_encoder_by_name(codec_name_.c_str());
   if (!codec_)
@@ -157,10 +114,8 @@ void LibavStreamer::initialize(const cv::Mat &img)
                                                                                                          NULL, NULL);
     throw std::runtime_error("Error creating video stream");
   }
-  codec_context_ = video_stream_->codec;
 
-  // Set options
-  avcodec_get_context_defaults3(codec_context_, codec_);
+  codec_context_ = avcodec_alloc_context3(codec_);
 
   codec_context_->codec_id = codec_->id;
   codec_context_->bit_rate = bitrate_;
@@ -209,7 +164,6 @@ void LibavStreamer::initialize(const cv::Mat &img)
   frame_->width = output_width_;
   frame_->height = output_height_;
   frame_->format = codec_context_->pix_fmt;
-  output_format_->flags |= AVFMT_NOFILE;
 
   // Generate header
   std::vector<uint8_t> header_buffer;
